@@ -4,138 +4,79 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.view.View
 import android.widget.Button
-import android.widget.SeekBar
+import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.recyclerview.widget.GridLayoutManager
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentActivity
+import androidx.viewpager2.adapter.FragmentStateAdapter
+import androidx.viewpager2.widget.ViewPager2
+import com.google.android.material.tabs.TabLayout
+import com.google.android.material.tabs.TabLayoutMediator
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var sequencerView: RecyclerView
-    private lateinit var mixerView: RecyclerView
-    private lateinit var tvBpm: TextView
-    private lateinit var tvStatus: TextView
-    private lateinit var btnPlay: Button
-
-    private val sequencerAdapter = SequencerAdapter { track, step ->
-        onStepToggled(track, step)
-    }
-    private val mixerAdapter = MixerAdapter { track, volume ->
-        onVolumeChanged(track, volume)
-    }
+    private lateinit var viewPager: ViewPager2
+    private lateinit var tabLayout: TabLayout
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        requestAudioPermission()
+        requestPermissions()
         AudioEngine.init(this)
 
-        sequencerView = findViewById(R.id.sequencerView)
-        mixerView = findViewById(R.id.mixerView)
-        tvBpm = findViewById(R.id.tvBpm)
-        tvStatus = findViewById(R.id.tvStatus)
-        btnPlay = findViewById(R.id.btnPlay)
+        viewPager = findViewById(R.id.viewPager)
+        tabLayout = findViewById(R.id.tabLayout)
 
-        setupSequencer()
-        setupMixer()
-        setupControls()
-    }
+        val adapter = StudioPagerAdapter(this)
+        viewPager.adapter = adapter
 
-    private fun setupSequencer() {
-        sequencerAdapter.setTracks(AudioEngine.getTracks())
-        sequencerView.layoutManager = LinearLayoutManager(this)
-        sequencerView.adapter = sequencerAdapter
-    }
-
-    private fun setupMixer() {
-        mixerAdapter.setTracks(AudioEngine.getTracks())
-        mixerView.layoutManager = LinearLayoutManager(
-            this, LinearLayoutManager.HORIZONTAL, false
-        )
-        mixerView.adapter = mixerAdapter
-    }
-
-    private fun setupControls() {
-        tvBpm.text = "${AudioEngine.bpm} BPM"
-
-        findViewById<SeekBar>(R.id.seekBpm).apply {
-            max = 180 - 60
-            progress = AudioEngine.bpm - 60
-            setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-                override fun onProgressChanged(sb: SeekBar?, p: Int, u: Boolean) {
-                    AudioEngine.bpm = 60 + p
-                    tvBpm.text = "${AudioEngine.bpm} BPM"
-                }
-                override fun onStartTrackingTouch(sb: SeekBar?) {}
-                override fun onStopTrackingTouch(sb: SeekBar?) {}
-            })
-        }
-
-        btnPlay.setOnClickListener {
-            if (AudioEngine.isPlaying) {
-                AudioEngine.stop()
-                btnPlay.text = "▶️ PLAY"
-                tvStatus.text = "⏹️ Stopped"
-            } else {
-                AudioEngine.play()
-                btnPlay.text = "⏹️ STOP"
-                tvStatus.text = "▶️ Playing..."
+        TabLayoutMediator(tabLayout, viewPager) { tab, pos ->
+            tab.text = when (pos) {
+                0 -> "🥁 Sequencer"
+                1 -> "🎹 Piano"
+                2 -> "🎛️ Mixer"
+                3 -> "🎼 Playlist"
+                else -> "Tab $pos"
             }
-        }
-
-        findViewById<Button>(R.id.btnClear).setOnClickListener {
-            AudioEngine.clearAll()
-            sequencerAdapter.notifyDataSetChanged()
-            tvStatus.text = "🗑️ Cleared"
-        }
-
-        findViewById<Button>(R.id.btnSave).setOnClickListener {
-            val name = "pattern_${System.currentTimeMillis()}.json"
-            AudioEngine.savePattern(name)
-            tvStatus.text = "💾 Saved: $name"
-        }
-
-        findViewById<Button>(R.id.btnLoad).setOnClickListener {
-            val latest = AudioEngine.loadLatest()
-            sequencerAdapter.notifyDataSetChanged()
-            tvStatus.text = if (latest != null) "📂 Loaded: $latest" else "❌ No saved pattern"
-        }
-
-        findViewById<Button>(R.id.btnDemo).setOnClickListener {
-            AudioEngine.loadDemoPattern()
-            sequencerAdapter.notifyDataSetChanged()
-            tvStatus.text = "🎵 Demo pattern loaded"
-        }
+        }.attach()
     }
 
-    private fun onStepToggled(track: Int, step: Int) {
-        AudioEngine.toggleStep(track, step)
-        sequencerAdapter.notifyItemChanged(track)
-        AudioEngine.previewSound(track)
-    }
-
-    private fun onVolumeChanged(track: Int, volume: Float) {
-        AudioEngine.setVolume(track, volume)
-    }
-
-    private fun requestAudioPermission() {
+    private fun requestPermissions() {
+        val perms = mutableListOf<String>()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
                 != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(this,
-                    arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1001)
+                perms.add(Manifest.permission.POST_NOTIFICATIONS)
             }
+        }
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
+            != PackageManager.PERMISSION_GRANTED) {
+            perms.add(Manifest.permission.RECORD_AUDIO)
+        }
+        if (perms.isNotEmpty()) {
+            ActivityCompat.requestPermissions(this, perms.toTypedArray(), 1001)
         }
     }
 
     override fun onDestroy() {
         super.onDestroy()
         AudioEngine.stop()
+    }
+}
+
+class StudioPagerAdapter(activity: FragmentActivity) : FragmentStateAdapter(activity) {
+    override fun getItemCount(): Int = 4
+    override fun createFragment(position: Int): Fragment = when (position) {
+        0 -> SequencerFragment()
+        1 -> PianoRollFragment()
+        2 -> MixerFragment()
+        3 -> PlaylistFragment()
+        else -> SequencerFragment()
     }
 }
