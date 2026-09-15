@@ -23,14 +23,15 @@ object AudioEngine {
     const val PIANO_KEYS = 24
     const val MAX_PATTERNS = 8
 
+    // FIX: internal bpm, akses via updateBpm()
     var bpm: Int = 120
+        private set
     var isPlaying: Boolean = false
         private set
     var isLooping: Boolean = true
     var masterVolume: Float = 0.8f
     var currentPattern: Int = 0
 
-    // Public untuk ZoomableSequencerView
     var currentStep: Int = -1
         private set
 
@@ -185,7 +186,10 @@ object AudioEngine {
         handler.removeCallbacksAndMessages(null)
     }
 
-    fun setBpm(newBpm: Int) { bpm = newBpm.coerceIn(40, 300) }
+    // FIX: rename dari setBpm() → updateBpm()
+    fun updateBpm(newBpm: Int) {
+        bpm = newBpm.coerceIn(40, 300)
+    }
 
     private fun scheduleNextStep() {
         if (!isPlaying) return
@@ -193,12 +197,10 @@ object AudioEngine {
 
         val anySolo = solos.any { it }
 
-        // Metronome
         if (Metronome.enabled) {
             Metronome.advance(currentStep, stepsPerBeat = 4, beatsPerBar = 4)
         }
 
-        // Play drum
         for (t in 0 until TRACKS) {
             if (mutes[t]) continue
             if (anySolo && !solos[t]) continue
@@ -207,7 +209,6 @@ object AudioEngine {
             }
         }
 
-        // Play piano
         val pianoNotes = PianoRollData.getNotes(currentPattern)
         for (note in pianoNotes) {
             if (note.step == currentStep) {
@@ -359,7 +360,6 @@ object AudioEngine {
                 }
                 patObj.put("drums", tracksArr)
 
-                // Piano notes dari PianoRollData
                 val notesArr = JSONArray()
                 for (note in PianoRollData.getNotes(p)) {
                     val n = JSONObject()
@@ -404,7 +404,6 @@ object AudioEngine {
                         patterns[p][t][s] = steps.getBoolean(s)
                     }
                 }
-                // Piano
                 val notesArr = patObj.optJSONArray("piano")
                 if (notesArr != null) {
                     val notes = mutableListOf<NoteData>()
@@ -512,7 +511,6 @@ object AudioEngine {
             ?.sortedByDescending { it.lastModified() } ?: emptyList()
     }
 
-    // ─── HELPER: Get Tracks ───
     fun getTracks(): List<Track> {
         return (0 until TRACKS).map { i ->
             Track(
