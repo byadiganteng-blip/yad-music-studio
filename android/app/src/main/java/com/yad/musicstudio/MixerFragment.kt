@@ -23,7 +23,21 @@ class MixerFragment : Fragment() {
             onPanChange = { track, pan -> AudioEngine.setPan(track, pan) },
             onMuteToggle = { track, m -> AudioEngine.setMute(track, m) },
             onSoloToggle = { track, s -> AudioEngine.setSolo(track, s) },
-            onEffectToggle = { track, effect, on -> AudioEngine.setEffect(track, effect, on) }
+            onEffectToggle = { track, effect, on -> AudioEngine.setEffect(track, effect, on) },
+            onEqClick = { track ->
+                Equalizer.showDialog(requireContext(), track) {
+                    // Apply EQ multiplier ke volume
+                    val mult = Equalizer.getMultiplier(track)
+                    val baseVol = AudioEngine.getVolume(track)
+                    AudioEngine.setVolume(track, (baseVol * mult).coerceIn(0f, 1f))
+                    adapter.notifyDataSetChanged()
+                }
+            },
+            onCompClick = { track ->
+                Compressor.showDialog(requireContext(), track) {
+                    adapter.notifyDataSetChanged()
+                }
+            }
         )
         adapter.setTracks(AudioEngine.getTracks())
         rv.layoutManager = LinearLayoutManager(requireContext(),
