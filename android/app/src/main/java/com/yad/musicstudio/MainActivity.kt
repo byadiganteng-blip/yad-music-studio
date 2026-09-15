@@ -4,10 +4,6 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import android.view.View
-import android.widget.Button
-import android.widget.LinearLayout
-import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -29,6 +25,7 @@ class MainActivity : AppCompatActivity() {
 
         requestPermissions()
         AudioEngine.init(this)
+        SampleManager.init(this)
 
         viewPager = findViewById(R.id.viewPager)
         tabLayout = findViewById(R.id.tabLayout)
@@ -38,11 +35,12 @@ class MainActivity : AppCompatActivity() {
 
         TabLayoutMediator(tabLayout, viewPager) { tab, pos ->
             tab.text = when (pos) {
-                0 -> "🥁 Sequencer"
+                0 -> "🥁 Seq"
                 1 -> "🎹 Piano"
                 2 -> "🎛️ Mixer"
-                3 -> "🎼 Playlist"
-                else -> "Tab $pos"
+                3 -> "🎵 Samples"
+                4 -> "🎼 Playlist"
+                else -> "Tab"
             }
         }.attach()
     }
@@ -59,6 +57,10 @@ class MainActivity : AppCompatActivity() {
             != PackageManager.PERMISSION_GRANTED) {
             perms.add(Manifest.permission.RECORD_AUDIO)
         }
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_AUDIO)
+            != PackageManager.PERMISSION_GRANTED && Build.VERSION.SDK_INT >= 33) {
+            perms.add(Manifest.permission.READ_MEDIA_AUDIO)
+        }
         if (perms.isNotEmpty()) {
             ActivityCompat.requestPermissions(this, perms.toTypedArray(), 1001)
         }
@@ -71,12 +73,13 @@ class MainActivity : AppCompatActivity() {
 }
 
 class StudioPagerAdapter(activity: FragmentActivity) : FragmentStateAdapter(activity) {
-    override fun getItemCount(): Int = 4
+    override fun getItemCount(): Int = 5
     override fun createFragment(position: Int): Fragment = when (position) {
         0 -> SequencerFragment()
         1 -> PianoRollFragment()
         2 -> MixerFragment()
-        3 -> PlaylistFragment()
+        3 -> SampleBrowserFragment()
+        4 -> PlaylistFragment()
         else -> SequencerFragment()
     }
 }
