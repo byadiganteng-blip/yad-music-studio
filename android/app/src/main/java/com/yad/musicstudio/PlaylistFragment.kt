@@ -31,19 +31,16 @@ class PlaylistFragment : Fragment() {
                 .show()
         }
 
-        // Add block button
         view.findViewById<Button>(R.id.btnAddBlock)?.setOnClickListener {
             showAddBlockDialog()
         }
 
-        // Clear button
         view.findViewById<Button>(R.id.btnClearPlaylist)?.setOnClickListener {
             PlaylistData.clear()
             playlistView.invalidate()
             updateInfo()
         }
 
-        // Play song button
         view.findViewById<Button>(R.id.btnPlaySong)?.setOnClickListener {
             Toast.makeText(requireContext(),
                 "Song Mode coming soon", Toast.LENGTH_SHORT).show()
@@ -115,6 +112,7 @@ class PlaylistFragment : Fragment() {
 
     private fun updateInfo() {
         val blocks = PlaylistData.getAll()
-        tvInfo.text = "🎼 ${blocks.size} blocks | Total ${PlaylistData.getTotalBars()} bars"
+        // FIX: pakai calculateTotalBars()
+        tvInfo.text = "🎼 ${blocks.size} blocks | Total ${PlaylistData.calculateTotalBars()} bars"
     }
 }
