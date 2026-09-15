@@ -23,6 +23,57 @@
         android:textSize="10sp"
         android:paddingBottom="8dp" />
 
+    <!-- Tool buttons row 1 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingBottom="4dp">
+
+        <Button
+            android:id="@+id/btnChord"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            android:text="🎼 Chord"
+            android:textSize="11sp"
+            android:backgroundTint="#8B5CF6"
+            android:textColor="#FFFFFF"
+            android:layout_marginEnd="4dp" />
+
+        <Button
+            android:id="@+id/btnProgression"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            android:text="🎵 Prog"
+            android:textSize="11sp"
+            android:backgroundTint="#EC4899"
+            android:textColor="#FFFFFF"
+            android:layout_marginEnd="4dp" />
+
+        <Button
+            android:id="@+id/btnScale"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            android:text="🎹 Scale"
+            android:textSize="11sp"
+            android:backgroundTint="#06B6D4"
+            android:textColor="#FFFFFF"
+            android:layout_marginEnd="4dp" />
+
+        <Button
+            android:id="@+id/btnArp"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            android:text="✨ Arp"
+            android:textSize="11sp"
+            android:backgroundTint="#F59E0B"
+            android:textColor="#FFFFFF" />
+    </LinearLayout>
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvPianoRoll"
         android:layout_width="match_parent"
