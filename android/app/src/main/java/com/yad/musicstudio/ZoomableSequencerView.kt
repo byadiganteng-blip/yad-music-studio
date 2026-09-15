@@ -9,34 +9,23 @@ import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.View
 
-/**
- * ZoomableSequencerView — Custom view sequencer dengan zoom + pan.
- * 
- * Gestures:
- * - Pinch zoom: zoom in/out
- * - Two-finger drag: pan horizontal
- * - Tap: toggle step
- */
 class ZoomableSequencerView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
     defStyle: Int = 0
 ) : View(context, attrs, defStyle) {
 
-    // Config
     private var steps = 16
     private var tracks = 16
     private var stepSize = 60f
     private var trackHeight = 60f
 
-    // View state
     private var scaleFactor = 1.0f
     private var offsetX = 0f
     private var offsetY = 0f
     private var minScale = 0.5f
     private var maxScale = 3.0f
 
-    // Paints
     private val bgPaint = Paint().apply { color = Color.parseColor("#0F172A") }
     private val stepOffPaint = Paint().apply { color = Color.parseColor("#1E293B") }
     private val stepAccentPaint = Paint().apply { color = Color.parseColor("#334155") }
@@ -49,7 +38,7 @@ class ZoomableSequencerView @JvmOverloads constructor(
     }
     private val trackNamePaint = Paint().apply {
         color = Color.parseColor("#CBD5E1")
-        textSize = 24f
+        textSize = 20f
         isAntiAlias = true
     }
 
@@ -68,19 +57,9 @@ class ZoomableSequencerView @JvmOverloads constructor(
     private var isPanning = false
 
     private var onStepToggle: ((track: Int, step: Int) -> Unit)? = null
-    private var currentStep = -1
 
     fun setOnStepToggleListener(listener: (track: Int, step: Int) -> Unit) {
         onStepToggle = listener
-    }
-
-    fun setPattern(pattern: Array<BooleanArray>) {
-        invalidate()
-    }
-
-    fun setCurrentStep(step: Int) {
-        currentStep = step
-        invalidate()
     }
 
     fun zoomIn() {
@@ -93,48 +72,37 @@ class ZoomableSequencerView @JvmOverloads constructor(
         invalidate()
     }
 
-    fun resetZoom() {
-        scaleFactor = 1.0f
-        offsetX = 0f
-        offsetY = 0f
-        invalidate()
-    }
-
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-
         canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), bgPaint)
 
-        val effectiveStepSize = stepSize * scaleFactor
-        val effectiveTrackHeight = trackHeight * scaleFactor
+        val effStep = stepSize * scaleFactor
+        val effTrack = trackHeight * scaleFactor
 
         canvas.save()
         canvas.translate(offsetX, offsetY)
 
         val currentPattern = AudioEngine.getCurrentPattern()
-        val currentPlayingStep = AudioEngine.getCurrentStepPublic()
-
-        val nameWidth = 80f * scaleFactor
+        val currentPlaying = AudioEngine.currentStep
+        val nameWidth = 90f * scaleFactor
 
         for (t in 0 until tracks) {
-            // Track name
             canvas.drawText(
                 AudioEngine.trackNames[t],
-                10f, (t * effectiveTrackHeight) + effectiveTrackHeight * 0.7f,
+                10f, (t * effTrack) + effTrack * 0.7f,
                 trackNamePaint
             )
 
-            // Steps
             for (s in 0 until steps) {
-                val x = nameWidth + s * effectiveStepSize
-                val y = t * effectiveTrackHeight
+                val x = nameWidth + s * effStep
+                val y = t * effTrack
 
                 val isOn = currentPattern.getOrNull(t)?.getOrNull(s) == true
-                val isCurrentPlaying = (s == currentPlayingStep)
+                val isCurrent = (s == currentPlaying)
                 val isAccent = (s % 4 == 0)
 
                 val paint = when {
-                    isCurrentPlaying -> stepCurrentPaint
+                    isCurrent -> stepCurrentPaint
                     isOn -> stepOnPaint
                     isAccent -> stepAccentPaint
                     else -> stepOffPaint
@@ -143,28 +111,25 @@ class ZoomableSequencerView @JvmOverloads constructor(
                 val pad = 2f * scaleFactor
                 canvas.drawRect(
                     x + pad, y + pad,
-                    x + effectiveStepSize - pad, y + effectiveTrackHeight - pad,
+                    x + effStep - pad, y + effTrack - pad,
                     paint
                 )
-
-                // Border
                 canvas.drawRect(
                     x + pad, y + pad,
-                    x + effectiveStepSize - pad, y + effectiveTrackHeight - pad,
+                    x + effStep - pad, y + effTrack - pad,
                     borderPaint
                 )
             }
         }
-
         canvas.restore()
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
         scaleDetector.onTouchEvent(event)
 
-        val effectiveStepSize = stepSize * scaleFactor
-        val effectiveTrackHeight = trackHeight * scaleFactor
-        val nameWidth = 80f * scaleFactor
+        val effStep = stepSize * scaleFactor
+        val effTrack = trackHeight * scaleFactor
+        val nameWidth = 90f * scaleFactor
 
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
@@ -179,7 +144,6 @@ class ZoomableSequencerView @JvmOverloads constructor(
             }
             MotionEvent.ACTION_MOVE -> {
                 if (event.pointerCount >= 2) {
-                    // Pan dengan 2 jari
                     val dx = event.x - lastTouchX
                     val dy = event.y - lastTouchY
                     offsetX += dx
@@ -193,15 +157,13 @@ class ZoomableSequencerView @JvmOverloads constructor(
             }
             MotionEvent.ACTION_UP -> {
                 if (!isPanning && !scaleDetector.isInProgress) {
-                    // Tap → toggle step
                     val localX = event.x - offsetX - nameWidth
                     val localY = event.y - offsetY
 
-                    val step = (localX / effectiveStepSize).toInt()
-                    val track = (localY / effectiveTrackHeight).toInt()
+                    val step = (localX / effStep).toInt()
+                    val track = (localY / effTrack).toInt()
 
                     if (step in 0 until steps && track in 0 until tracks) {
-                        // Push undo
                         UndoRedoManager.push(UndoRedoManager.Action(
                             type = "toggle_step",
                             data = mapOf("track" to track, "step" to step)
