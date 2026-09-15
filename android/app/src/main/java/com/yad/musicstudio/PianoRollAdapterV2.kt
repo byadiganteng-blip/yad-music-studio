@@ -8,9 +8,6 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
-/**
- * PianoRollAdapterV2 — Adapter dengan velocity color + length.
- */
 class PianoRollAdapterV2(
     private val onNoteToggle: (key: Int, step: Int) -> Unit,
     private val onNoteLongPress: (key: Int, step: Int) -> Unit = { _, _ -> }
@@ -23,7 +20,6 @@ class PianoRollAdapterV2(
     }
 
     override fun onBindViewHolder(holder: VH, position: Int) {
-        // Reverse: tinggi ke rendah
         val key = PianoRollData.KEYS - 1 - position
         holder.bind(key)
     }
@@ -40,9 +36,14 @@ class PianoRollAdapterV2(
             val noteName = notes[key % 12] + octave
             tvNote.text = noteName
 
-            // Warna hitam untuk sharp
             val isBlack = noteName.contains("#")
-            tvNote.setBackgroundColor(if (isBlack) 0xFF1E293B.toInt() else 0xFF475569.toInt())
+            var bgColor = if (isBlack) 0xFF1E293B.toInt() else 0xFF475569.toInt()
+            
+            // Highlight scale: warna hijau soft untuk note di scale
+            if (ScaleHighlight.enabled && ScaleHighlight.isInScale(key)) {
+                bgColor = if (isBlack) 0xFF1A4A3A.toInt() else 0xFF2D6B4E.toInt()
+            }
+            tvNote.setBackgroundColor(bgColor)
 
             container.removeAllViews()
             val currentPattern = AudioEngine.currentPattern
@@ -54,30 +55,11 @@ class PianoRollAdapterV2(
                 v.layoutParams = params
 
                 val velocity = PianoRollData.getVelocity(currentPattern, key, step)
-                val length = PianoRollData.getLength(currentPattern, key, step)
+                val isOn = velocity > 0
 
-                // Warna berdasarkan velocity
-                v.setBackgroundColor(when {
-                    velocity >= 100 -> Color.parseColor("#EF4444")  // Keras - merah
-                    velocity >= 60 -> Color.parseColor("#F59E0B")   // Sedang - oranye
-                    velocity > 0 -> Color.parseColor("#FBBF24")     // Pelan - kuning
-                    step % 4 == 0 -> Color.parseColor("#334155")    // Accent
-                    else -> Color.parseColor("#1E293B")             // Off
-                })
+                v.setBackgroundColor(ScaleHighlight.getStepColor(key, step, isOn, velocity))
 
-                // Draw border untuk indikasi length
-                if (velocity > 0 && length > 1) {
-                    v.setBackgroundResource(android.R.drawable.editbox_background)
-                    v.setBackgroundColor(when {
-                        velocity >= 100 -> Color.parseColor("#EF4444")
-                        velocity >= 60 -> Color.parseColor("#F59E0B")
-                        else -> Color.parseColor("#FBBF24")
-                    })
-                }
-
-                // Tap = toggle
                 v.setOnClickListener {
-                    // Push undo
                     UndoRedoManager.push(UndoRedoManager.Action(
                         type = "toggle_piano_note",
                         data = mapOf("key" to key, "step" to step)
@@ -88,7 +70,6 @@ class PianoRollAdapterV2(
                     notifyItemChanged(PianoRollData.KEYS - 1 - key)
                 }
 
-                // Long press = ubah velocity
                 v.setOnLongClickListener {
                     showVelocityDialog(itemView, key, step)
                     true
@@ -112,7 +93,7 @@ class PianoRollAdapterV2(
             val container = LinearLayout(ctx).apply {
                 orientation = LinearLayout.VERTICAL
                 setPadding(padding, padding, padding, padding)
-                addView(android.widget.TextView(ctx).apply {
+                addView(TextView(ctx).apply {
                     text = "Velocity: $currentVel"
                     setTextColor(Color.WHITE)
                     textSize = 14f
@@ -125,15 +106,8 @@ class PianoRollAdapterV2(
                 .setView(container)
                 .setPositiveButton("OK") { _, _ ->
                     PianoRollData.setVelocity(
-                        AudioEngine.currentPattern, key, step,
-                        slider.progress
+                        AudioEngine.currentPattern, key, step, slider.progress
                     )
-                    // Set length default
-                    if (slider.progress > 0) {
-                        PianoRollData.setLength(
-                            AudioEngine.currentPattern, key, step, 1
-                        )
-                    }
                     notifyItemChanged(PianoRollData.KEYS - 1 - key)
                 }
                 .setNegativeButton("Batal", null)
