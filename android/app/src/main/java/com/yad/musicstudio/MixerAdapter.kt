@@ -11,7 +11,9 @@ class MixerAdapter(
     private val onPanChange: (Int, Float) -> Unit,
     private val onMuteToggle: (Int, Boolean) -> Unit,
     private val onSoloToggle: (Int, Boolean) -> Unit,
-    private val onEffectToggle: (Int, AudioEngine.EffectType, Boolean) -> Unit
+    private val onEffectToggle: (Int, AudioEngine.EffectType, Boolean) -> Unit,
+    private val onEqClick: (Int) -> Unit = {},
+    private val onCompClick: (Int) -> Unit = {}
 ) : RecyclerView.Adapter<MixerAdapter.VH>() {
 
     private var tracks: List<Track> = emptyList()
@@ -43,6 +45,9 @@ class MixerAdapter(
         private val cbReverb: CheckBox = itemView.findViewById(R.id.cbReverb)
         private val cbDelay: CheckBox = itemView.findViewById(R.id.cbDelay)
         private val cbDist: CheckBox = itemView.findViewById(R.id.cbDistortion)
+        private val btnEq: Button? = itemView.findViewById(R.id.btnEq)
+        private val btnComp: Button? = itemView.findViewById(R.id.btnComp)
+        private val peakMeter: PeakMeterView? = itemView.findViewById(R.id.peakMeter)
 
         fun bind(track: Track) {
             val i = track.index
@@ -55,6 +60,7 @@ class MixerAdapter(
                 override fun onProgressChanged(sb: SeekBar?, p: Int, u: Boolean) {
                     tvVol.text = "$p%"
                     onVolumeChange(i, p / 100f)
+                    peakMeter?.setLevel(p / 100f)
                 }
                 override fun onStartTrackingTouch(sb: SeekBar?) {}
                 override fun onStopTrackingTouch(sb: SeekBar?) {}
@@ -101,6 +107,15 @@ class MixerAdapter(
             cbDist.setOnCheckedChangeListener { _, checked ->
                 onEffectToggle(i, AudioEngine.EffectType.DISTORTION, checked)
             }
+
+            // EQ button
+            btnEq?.setOnClickListener { onEqClick(i) }
+
+            // Compressor button
+            btnComp?.setOnClickListener { onCompClick(i) }
+
+            // Peak meter initial
+            peakMeter?.setLevel(AudioEngine.getVolume(i))
         }
     }
 }
