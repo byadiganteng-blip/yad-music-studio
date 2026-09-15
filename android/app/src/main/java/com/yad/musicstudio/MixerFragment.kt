@@ -25,15 +25,9 @@ class MixerFragment : Fragment() {
             onSoloToggle = { track, s -> AudioEngine.setSolo(track, s) },
             onEffectToggle = { track, effect, on -> AudioEngine.setEffect(track, effect, on) }
         )
-        adapter.setTracks((0 until AudioEngine.TRACKS).map { i ->
-            AudioEngine.Track(
-                index = i,
-                name = AudioEngine.trackNames[i],
-                steps = BooleanArray(0),
-                volume = AudioEngine.getVolume(i)
-            )
-        })
-        rv.layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
+        adapter.setTracks(AudioEngine.getTracks())
+        rv.layoutManager = LinearLayoutManager(requireContext(),
+            LinearLayoutManager.HORIZONTAL, false)
         rv.adapter = adapter
     }
 }
