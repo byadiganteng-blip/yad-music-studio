@@ -3,6 +3,7 @@
     package="com.yad.musicstudio">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.VIBRATE" />
 
@@ -10,7 +11,8 @@
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="YAD Music Studio"
-        android:theme="@style/Theme.AppCompat.DayNight.NoActionBar">
+        android:theme="@style/Theme.AppCompat.DayNight.NoActionBar"
+        android:hardwareAccelerated="true">
 
         <activity
             android:name=".MainActivity"
