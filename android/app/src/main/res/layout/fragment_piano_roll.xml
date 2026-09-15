@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#0F172A"
+    android:padding="8dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="🎹 PIANO ROLL — 24 keys × 16 steps"
+        android:textColor="#94A3B8"
+        android:textSize="12sp"
+        android:paddingBottom="8dp" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvPianoRoll"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <Button
+        android:id="@+id/btnClearPiano"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:text="🗑️ Clear Piano Roll"
+        android:backgroundTint="#EF4444"
+        android:textColor="#FFFFFF" />
+
+</LinearLayout>
