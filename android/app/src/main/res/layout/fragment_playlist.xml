@@ -4,24 +4,60 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="#0F172A"
-    android:padding="16dp"
-    android:gravity="center">
+    android:padding="8dp">
 
     <TextView
-        android:layout_width="wrap_content"
+        android:id="@+id/tvPlaylistInfo"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="🎼 PLAYLIST"
-        android:textColor="#60A5FA"
-        android:textSize="24sp"
-        android:textStyle="bold" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Pattern arranger (coming soon)\n\nDrag patterns to arrange song"
+        android:text="🎼 0 blocks"
         android:textColor="#94A3B8"
-        android:textSize="14sp"
-        android:gravity="center"
-        android:layout_marginTop="20dp" />
+        android:textSize="12sp"
+        android:paddingBottom="8dp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingBottom="8dp">
+
+        <Button
+            android:id="@+id/btnAddBlock"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            android:text="➕ Add Block"
+            android:textSize="11sp"
+            android:backgroundTint="#10B981"
+            android:textColor="#FFFFFF"
+            android:layout_marginEnd="4dp" />
+
+        <Button
+            android:id="@+id/btnClearPlaylist"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            android:text="🗑️ Clear"
+            android:textSize="11sp"
+            android:backgroundTint="#EF4444"
+            android:textColor="#FFFFFF"
+            android:layout_marginEnd="4dp" />
+
+        <Button
+            android:id="@+id/btnPlaySong"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            android:text="▶ Song"
+            android:textSize="11sp"
+            android:backgroundTint="#3B82F6"
+            android:textColor="#FFFFFF" />
+    </LinearLayout>
+
+    <com.yad.musicstudio.PlaylistView
+        android:id="@+id/playlistView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
 
 </LinearLayout>
