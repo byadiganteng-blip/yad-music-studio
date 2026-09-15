@@ -6,6 +6,7 @@
     android:background="#0F172A"
     android:padding="8dp">
 
+    <!-- Top bar: BPM + Play + Zoom -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -21,14 +22,34 @@
             android:textColor="#FBBF24"
             android:textSize="14sp"
             android:fontFamily="monospace"
-            android:layout_marginEnd="12dp" />
+            android:layout_marginEnd="8dp" />
 
         <SeekBar
             android:id="@+id/seekBpm"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_marginEnd="12dp" />
+            android:layout_marginEnd="8dp" />
+
+        <Button
+            android:id="@+id/btnZoomOut"
+            android:layout_width="44dp"
+            android:layout_height="40dp"
+            android:text="➖"
+            android:textSize="14sp"
+            android:backgroundTint="#334155"
+            android:textColor="#FFFFFF"
+            android:layout_marginEnd="4dp" />
+
+        <Button
+            android:id="@+id/btnZoomIn"
+            android:layout_width="44dp"
+            android:layout_height="40dp"
+            android:text="➕"
+            android:textSize="14sp"
+            android:backgroundTint="#334155"
+            android:textColor="#FFFFFF"
+            android:layout_marginEnd="4dp" />
 
         <Button
             android:id="@+id/btnPlay"
@@ -40,12 +61,42 @@
             android:textSize="12sp" />
     </LinearLayout>
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvSequencer"
+    <!-- Undo/Redo bar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="4dp"
+        android:gravity="end">
+
+        <Button
+            android:id="@+id/btnUndo"
+            android:layout_width="80dp"
+            android:layout_height="36dp"
+            android:text="↶ Undo"
+            android:textSize="11sp"
+            android:backgroundTint="#3B82F6"
+            android:textColor="#FFFFFF"
+            android:layout_marginEnd="4dp" />
+
+        <Button
+            android:id="@+id/btnRedo"
+            android:layout_width="80dp"
+            android:layout_height="36dp"
+            android:text="↷ Redo"
+            android:textSize="11sp"
+            android:backgroundTint="#8B5CF6"
+            android:textColor="#FFFFFF" />
+    </LinearLayout>
+
+    <!-- Zoomable sequencer -->
+    <com.yad.musicstudio.ZoomableSequencerView
+        android:id="@+id/zoomableSequencer"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1" />
 
+    <!-- Bottom action bar -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
