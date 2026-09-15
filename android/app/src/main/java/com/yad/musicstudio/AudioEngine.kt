@@ -3,6 +3,7 @@ package com.yad.musicstudio
 import android.content.Context
 import android.media.AudioAttributes
 import android.media.AudioFormat
+import android.media.AudioManager
 import android.media.AudioTrack
 import android.media.SoundPool
 import android.os.Handler
@@ -29,6 +30,10 @@ object AudioEngine {
     var masterVolume: Float = 0.8f
     var currentPattern: Int = 0
 
+    // Public untuk ZoomableSequencerView
+    var currentStep: Int = -1
+        private set
+
     private var soundPool: SoundPool? = null
     private val soundIds = mutableMapOf<Int, Int>()
     private val volumes = FloatArray(TRACKS) { 0.8f }
@@ -38,24 +43,15 @@ object AudioEngine {
     private val effects = Array(TRACKS) { EffectChain() }
     private val fxSends = FloatArray(TRACKS) { 0.3f }
 
-    // Pattern data: [pattern][track][step]
     private val patterns = Array(MAX_PATTERNS) {
         Array(TRACKS) { BooleanArray(STEPS) }
     }
 
-    // Piano roll: [pattern][key][step]
-    private val pianoRoll = Array(MAX_PATTERNS) {
-        Array(PIANO_KEYS) { BooleanArray(STEPS) }
-    }
-
-    // Synth settings per track
     private val synths = Array(TRACKS) { SynthSettings() }
 
     private val handler = Handler(Looper.getMainLooper())
-    private var currentStep = 0
     private var context: Context? = null
 
-    // 16 drum sounds
     val trackNames = arrayOf(
         "Kick", "Snare", "Hi-Hat", "Clap",
         "Tom Hi", "Tom Lo", "Cymbal", "Rim",
@@ -75,7 +71,7 @@ object AudioEngine {
             .setAudioAttributes(attrs)
             .build()
 
-        Log.i(TAG, "AudioEngine v2 initialized — $TRACKS tracks")
+        Log.i(TAG, "AudioEngine v3 initialized")
     }
 
     // ─── PATTERN ───
@@ -90,24 +86,18 @@ object AudioEngine {
     fun clearPattern() {
         for (t in 0 until TRACKS) for (s in 0 until STEPS) {
             patterns[currentPattern][t][s] = false
-            pianoRoll[currentPattern][t % PIANO_KEYS][s] = false
-        }
-    }
-
-    // ─── PIANO ROLL ───
-    fun getPianoRoll(): Array<BooleanArray> = pianoRoll[currentPattern]
-
-    fun togglePianoKey(key: Int, step: Int) {
-        if (key in 0 until PIANO_KEYS && step in 0 until STEPS) {
-            pianoRoll[currentPattern][key][step] = !pianoRoll[currentPattern][key][step]
         }
     }
 
     // ─── MIXER ───
-    fun setVolume(track: Int, vol: Float) { if (track in 0 until TRACKS) volumes[track] = vol.coerceIn(0f, 1f) }
+    fun setVolume(track: Int, vol: Float) {
+        if (track in 0 until TRACKS) volumes[track] = vol.coerceIn(0f, 1f)
+    }
     fun getVolume(track: Int) = volumes[track]
 
-    fun setPan(track: Int, pan: Float) { if (track in 0 until TRACKS) pans[track] = pan.coerceIn(-1f, 1f) }
+    fun setPan(track: Int, pan: Float) {
+        if (track in 0 until TRACKS) pans[track] = pan.coerceIn(-1f, 1f)
+    }
     fun getPan(track: Int) = pans[track]
 
     fun setMute(track: Int, m: Boolean) { if (track in 0 until TRACKS) mutes[track] = m }
@@ -116,7 +106,9 @@ object AudioEngine {
     fun setSolo(track: Int, s: Boolean) { if (track in 0 until TRACKS) solos[track] = s }
     fun isSolo(track: Int) = solos[track]
 
-    fun setFxSend(track: Int, send: Float) { if (track in 0 until TRACKS) fxSends[track] = send.coerceIn(0f, 1f) }
+    fun setFxSend(track: Int, send: Float) {
+        if (track in 0 until TRACKS) fxSends[track] = send.coerceIn(0f, 1f)
+    }
     fun getFxSend(track: Int) = fxSends[track]
 
     fun setEffect(track: Int, effect: EffectType, enabled: Boolean) {
@@ -133,9 +125,49 @@ object AudioEngine {
 
     // ─── SYNTH ───
     fun getSynth(track: Int): SynthSettings = synths[track]
-
     fun updateSynth(track: Int, settings: SynthSettings) {
         if (track in 0 until TRACKS) synths[track] = settings
+    }
+
+    // ─── UNDO SUPPORT ───
+    fun undo(): Boolean {
+        val action = UndoRedoManager.undo() ?: return false
+        applyUndoAction(action)
+        return true
+    }
+
+    fun redo(): Boolean {
+        val action = UndoRedoManager.redo() ?: return false
+        applyUndoAction(action)
+        return true
+    }
+
+    private fun applyUndoAction(action: UndoRedoManager.Action) {
+        when (action.type) {
+            "toggle_step" -> {
+                val track = (action.data["track"] as? Number)?.toInt() ?: return
+                val step = (action.data["step"] as? Number)?.toInt() ?: return
+                patterns[currentPattern][track][step] = !patterns[currentPattern][track][step]
+            }
+            "clear_pattern" -> {
+                @Suppress("UNCHECKED_CAST")
+                val snapshot = action.data["snapshot"] as? Array<BooleanArray> ?: return
+                for (t in 0 until TRACKS) {
+                    for (s in 0 until STEPS) {
+                        patterns[currentPattern][t][s] = snapshot[t][s]
+                    }
+                }
+            }
+            "set_volume" -> {
+                val track = (action.data["track"] as? Number)?.toInt() ?: return
+                val prevVol = (action.data["prev_volume"] as? Number)?.toFloat() ?: return
+                volumes[track] = prevVol
+            }
+        }
+    }
+
+    fun snapshotCurrentPattern(): Array<BooleanArray> {
+        return Array(TRACKS) { t -> patterns[currentPattern][t].copyOf() }
     }
 
     // ─── PLAYBACK ───
@@ -143,11 +175,13 @@ object AudioEngine {
         if (isPlaying) return
         isPlaying = true
         currentStep = 0
+        Metronome.reset()
         scheduleNextStep()
     }
 
     fun stop() {
         isPlaying = false
+        currentStep = -1
         handler.removeCallbacksAndMessages(null)
     }
 
@@ -159,6 +193,11 @@ object AudioEngine {
 
         val anySolo = solos.any { it }
 
+        // Metronome
+        if (Metronome.enabled) {
+            Metronome.advance(currentStep, stepsPerBeat = 4, beatsPerBar = 4)
+        }
+
         // Play drum
         for (t in 0 until TRACKS) {
             if (mutes[t]) continue
@@ -169,9 +208,11 @@ object AudioEngine {
         }
 
         // Play piano
-        for (k in 0 until PIANO_KEYS) {
-            if (pianoRoll[currentPattern][k][currentStep]) {
-                playNote(k + 48, 0.8f, 0f)  // offset for piano range
+        val pianoNotes = PianoRollData.getNotes(currentPattern)
+        for (note in pianoNotes) {
+            if (note.step == currentStep) {
+                val volume = note.velocity / 127f
+                playNote(note.key + 48, volume)
             }
         }
 
@@ -191,14 +232,14 @@ object AudioEngine {
                 val rightVol = volume * (if (pan >= 0) 1f else 1f + pan)
                 soundPool?.play(soundId, leftVol, rightVol, 1, 0, 1f)
             } else {
-                generateTone(track, volume, pan)
+                generateTone(track, volume)
             }
         } catch (e: Exception) {
             Log.e(TAG, "playSound error", e)
         }
     }
 
-    private fun generateTone(track: Int, volume: Float, pan: Float) {
+    private fun generateTone(track: Int, volume: Float) {
         Thread {
             try {
                 val sampleRate = 44100
@@ -232,32 +273,16 @@ object AudioEngine {
                     else -> 440.0
                 }
 
-                val synth = synths[track]
                 for (i in 0 until numSamples) {
                     val t = i.toDouble() / sampleRate
-                    var envelope = 1.0 - (i.toDouble() / numSamples)
-                    // ADSR sederhana
-                    envelope *= adsr(t, synth)
-
-                    var sample = 0.0
-                    when (synth.waveform) {
-                        Waveform.SINE -> sample = sin(2 * PI * freq * t)
-                        Waveform.SQUARE -> sample = if (sin(2 * PI * freq * t) > 0) 1.0 else -1.0
-                        Waveform.SAW -> sample = 2.0 * (t * freq - kotlin.math.floor(0.5 + t * freq))
-                        Waveform.TRIANGLE -> sample = 2.0 * kotlin.math.abs(2.0 * (t * freq - kotlin.math.floor(0.5 + t * freq))) - 1.0
-                    }
-
-                    // Distortion
-                    if (effects[track].distortion) {
-                        sample = kotlin.math.tanh(sample * 3.0) / kotlin.math.tanh(3.0)
-                    }
-
-                    samples[i] = (sample * Short.MAX_VALUE * envelope * volume * 0.5)
+                    val envelope = 1.0 - (i.toDouble() / numSamples)
+                    val sample = sin(2 * PI * freq * t) * envelope * volume * 0.5
+                    samples[i] = (sample * Short.MAX_VALUE)
                         .coerceIn(-32768.0, 32767.0).toInt().toShort()
                 }
 
                 val audioTrack = AudioTrack(
-                    android.media.AudioManager.STREAM_MUSIC,
+                    AudioManager.STREAM_MUSIC,
                     sampleRate,
                     AudioFormat.CHANNEL_OUT_MONO,
                     AudioFormat.ENCODING_PCM_16BIT,
@@ -274,15 +299,7 @@ object AudioEngine {
         }.start()
     }
 
-    private fun adsr(t: Double, synth: SynthSettings): Double {
-        return when {
-            t < synth.attack -> t / synth.attack
-            t < synth.attack + synth.decay -> 1.0 - (1.0 - synth.sustain) * ((t - synth.attack) / synth.decay)
-            else -> synth.sustain
-        }
-    }
-
-    fun playNote(midiNote: Int, volume: Float = 0.8f, pan: Float = 0f) {
+    fun playNote(midiNote: Int, volume: Float = 0.8f) {
         val freq = 440.0 * Math.pow(2.0, (midiNote - 69) / 12.0)
         Thread {
             try {
@@ -295,11 +312,12 @@ object AudioEngine {
                     val t = i.toDouble() / sampleRate
                     val envelope = 1.0 - (i.toDouble() / numSamples)
                     val sample = sin(2 * PI * freq * t) * envelope * volume * 0.5
-                    samples[i] = (sample * Short.MAX_VALUE).toInt().coerceIn(-32768, 32767).toShort()
+                    samples[i] = (sample * Short.MAX_VALUE)
+                        .coerceIn(-32768.0, 32767.0).toInt().toShort()
                 }
 
                 val audioTrack = AudioTrack(
-                    android.media.AudioManager.STREAM_MUSIC,
+                    AudioManager.STREAM_MUSIC,
                     sampleRate,
                     AudioFormat.CHANNEL_OUT_MONO,
                     AudioFormat.ENCODING_PCM_16BIT,
@@ -330,7 +348,6 @@ object AudioEngine {
             json.put("current_pattern", currentPattern)
             json.put("timestamp", System.currentTimeMillis())
 
-            // Patterns
             val patsArr = JSONArray()
             for (p in 0 until MAX_PATTERNS) {
                 val patObj = JSONObject()
@@ -342,35 +359,25 @@ object AudioEngine {
                 }
                 patObj.put("drums", tracksArr)
 
-                val pianoArr = JSONArray()
-                for (k in 0 until PIANO_KEYS) {
-                    val stepsArr = JSONArray()
-                    for (s in 0 until STEPS) stepsArr.put(pianoRoll[p][k][s])
-                    pianoArr.put(stepsArr)
+                // Piano notes dari PianoRollData
+                val notesArr = JSONArray()
+                for (note in PianoRollData.getNotes(p)) {
+                    val n = JSONObject()
+                    n.put("key", note.key)
+                    n.put("step", note.step)
+                    n.put("velocity", note.velocity)
+                    n.put("length", note.length)
+                    notesArr.put(n)
                 }
-                patObj.put("piano", pianoArr)
+                patObj.put("piano", notesArr)
                 patsArr.put(patObj)
             }
             json.put("patterns", patsArr)
-
-            // Mixer
-            val mixerArr = JSONArray()
-            for (t in 0 until TRACKS) {
-                val m = JSONObject()
-                m.put("volume", volumes[t])
-                m.put("pan", pans[t])
-                m.put("mute", mutes[t])
-                m.put("solo", solos[t])
-                m.put("fx_send", fxSends[t])
-                mixerArr.put(m)
-            }
-            json.put("mixer", mixerArr)
 
             val dir = File(context?.filesDir, "projects")
             if (!dir.exists()) dir.mkdirs()
             val file = File(dir, "$name.yad")
             file.writeText(json.toString(2))
-            Log.i(TAG, "Saved: ${file.absolutePath}")
             return file.absolutePath
         } catch (e: Exception) {
             Log.e(TAG, "saveProject error", e)
@@ -397,29 +404,22 @@ object AudioEngine {
                         patterns[p][t][s] = steps.getBoolean(s)
                     }
                 }
-                val piano = patObj.optJSONArray("piano")
-                if (piano != null) {
-                    for (k in 0 until minOf(piano.length(), PIANO_KEYS)) {
-                        val steps = piano.getJSONArray(k)
-                        for (s in 0 until minOf(steps.length(), STEPS)) {
-                            pianoRoll[p][k][s] = steps.getBoolean(s)
-                        }
+                // Piano
+                val notesArr = patObj.optJSONArray("piano")
+                if (notesArr != null) {
+                    val notes = mutableListOf<NoteData>()
+                    for (i in 0 until notesArr.length()) {
+                        val n = notesArr.getJSONObject(i)
+                        notes.add(NoteData(
+                            key = n.getInt("key"),
+                            step = n.getInt("step"),
+                            velocity = n.optInt("velocity", 100),
+                            length = n.optInt("length", 1)
+                        ))
                     }
+                    PianoRollData.setNotes(p, notes)
                 }
             }
-
-            val mixerArr = json.optJSONArray("mixer")
-            if (mixerArr != null) {
-                for (t in 0 until minOf(mixerArr.length(), TRACKS)) {
-                    val m = mixerArr.getJSONObject(t)
-                    volumes[t] = m.optDouble("volume", 0.8).toFloat()
-                    pans[t] = m.optDouble("pan", 0.0).toFloat()
-                    mutes[t] = m.optBoolean("mute", false)
-                    solos[t] = m.optBoolean("solo", false)
-                    fxSends[t] = m.optDouble("fx_send", 0.3).toFloat()
-                }
-            }
-            Log.i(TAG, "Loaded: ${file.name}")
             return true
         } catch (e: Exception) {
             Log.e(TAG, "loadProject error", e)
@@ -438,7 +438,6 @@ object AudioEngine {
         patterns[currentPattern][6][10] = true
     }
 
-    // ─── EXPORT WAV ───
     fun exportWav(): String {
         try {
             val sampleRate = 44100
@@ -448,7 +447,6 @@ object AudioEngine {
             val numSamples = sampleRate * totalMs / 1000
             val output = FloatArray(numSamples)
 
-            // Render setiap step
             for (step in 0 until STEPS) {
                 val startSample = (step * stepMs * sampleRate / 1000).toInt()
                 for (t in 0 until TRACKS) {
@@ -456,7 +454,7 @@ object AudioEngine {
                     if (mutes[t]) continue
 
                     val freq = 200.0 + t * 100
-                    val durSamples = sampleRate / 4  // 250ms per hit
+                    val durSamples = sampleRate / 4
                     for (i in 0 until minOf(durSamples, numSamples - startSample)) {
                         val t2 = i.toDouble() / sampleRate
                         val env = 1.0 - (i.toDouble() / durSamples)
@@ -466,18 +464,17 @@ object AudioEngine {
                 }
             }
 
-            // Normalize
             var peak = 0f
             for (s in output) if (kotlin.math.abs(s) > peak) peak = kotlin.math.abs(s)
             if (peak > 0) for (i in output.indices) output[i] /= peak
 
-            // Write WAV
             val dir = File(context?.filesDir, "exports")
             if (!dir.exists()) dir.mkdirs()
             val file = File(dir, "export_${System.currentTimeMillis()}.wav")
 
             val dataSize = numSamples * 2
-            val header = java.nio.ByteBuffer.allocate(44).order(java.nio.ByteOrder.LITTLE_ENDIAN).apply {
+            val header = java.nio.ByteBuffer.allocate(44)
+                .order(java.nio.ByteOrder.LITTLE_ENDIAN).apply {
                 put("RIFF".toByteArray())
                 putInt(36 + dataSize)
                 put("WAVE".toByteArray())
@@ -495,11 +492,12 @@ object AudioEngine {
 
             file.outputStream().use { out ->
                 out.write(header.array())
-                val buf = java.nio.ByteBuffer.allocate(dataSize).order(java.nio.ByteOrder.LITTLE_ENDIAN)
-                for (s in output) buf.putShort((s * 32767).toInt().coerceIn(-32768, 32767).toShort())
+                val buf = java.nio.ByteBuffer.allocate(dataSize)
+                    .order(java.nio.ByteOrder.LITTLE_ENDIAN)
+                for (s in output) buf.putShort((s * 32767).toInt()
+                    .coerceIn(-32768, 32767).toShort())
                 out.write(buf.array())
             }
-            Log.i(TAG, "Exported: ${file.absolutePath}")
             return file.absolutePath
         } catch (e: Exception) {
             Log.e(TAG, "exportWav error", e)
@@ -510,7 +508,20 @@ object AudioEngine {
     fun listProjects(): List<File> {
         val dir = File(context?.filesDir, "projects")
         if (!dir.exists()) return emptyList()
-        return dir.listFiles()?.filter { it.extension == "yad" }?.sortedByDescending { it.lastModified() } ?: emptyList()
+        return dir.listFiles()?.filter { it.extension == "yad" }
+            ?.sortedByDescending { it.lastModified() } ?: emptyList()
+    }
+
+    // ─── HELPER: Get Tracks ───
+    fun getTracks(): List<Track> {
+        return (0 until TRACKS).map { i ->
+            Track(
+                index = i,
+                name = trackNames[i],
+                steps = patterns[currentPattern][i].copyOf(),
+                volume = volumes[i]
+            )
+        }
     }
 
     data class SynthSettings(
