@@ -9,9 +9,6 @@ import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
 
-/**
- * PlaylistView — Timeline untuk arrange pattern.
- */
 class PlaylistView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
@@ -48,16 +45,15 @@ class PlaylistView @JvmOverloads constructor(
         isAntiAlias = true
     }
 
-    // Pattern colors
     private val patternColors = intArrayOf(
-        0xFFEF4444.toInt(),  // Red
-        0xFFF59E0B.toInt(),  // Orange
-        0xFFFBBF24.toInt(),  // Yellow
-        0xFF10B981.toInt(),  // Green
-        0xFF06B6D4.toInt(),  // Cyan
-        0xFF3B82F6.toInt(),  // Blue
-        0xFF8B5CF6.toInt(),  // Purple
-        0xFFEC4899.toInt()   // Pink
+        0xFFEF4444.toInt(),
+        0xFFF59E0B.toInt(),
+        0xFFFBBF24.toInt(),
+        0xFF10B981.toInt(),
+        0xFF06B6D4.toInt(),
+        0xFF3B82F6.toInt(),
+        0xFF8B5CF6.toInt(),
+        0xFFEC4899.toInt()
     )
 
     private var onBlockClick: ((barStart: Int, patternIndex: Int) -> Unit)? = null
@@ -73,24 +69,21 @@ class PlaylistView @JvmOverloads constructor(
         canvas.save()
         canvas.translate(offsetX, offsetY)
 
-        val totalBars = PlaylistData.getTotalBars()
-        val totalHeight = trackHeight * 8  // 8 track rows untuk pattern
+        // FIX: pakai calculateTotalBars()
+        val totalBars = PlaylistData.calculateTotalBars()
+        val totalHeight = trackHeight * 8
 
-        // Grid lines (bar)
         for (b in 0..totalBars) {
             val x = b * barWidth
             canvas.drawLine(x, 0f, x, totalHeight, barLinePaint)
-            // Bar number
             canvas.drawText("$b", x + 5f, 20f, barNumPaint)
         }
 
-        // Row lines (pattern slot)
         for (p in 0..8) {
             val y = p * trackHeight
             canvas.drawLine(0f, y, totalBars * barWidth, y, barLinePaint)
         }
 
-        // Pattern blocks
         val blocks = PlaylistData.getAll()
         for (block in blocks) {
             val x = block.barStart * barWidth
@@ -98,7 +91,6 @@ class PlaylistView @JvmOverloads constructor(
             val w = block.barLength * barWidth
             val h = trackHeight
 
-            // Block background
             val color = patternColors.getOrElse(block.patternIndex) { 0xFF3B82F6.toInt() }
             blockPaint.color = color
 
@@ -106,7 +98,6 @@ class PlaylistView @JvmOverloads constructor(
             canvas.drawRoundRect(rect, 8f, 8f, blockPaint)
             canvas.drawRoundRect(rect, 8f, 8f, blockStrokePaint)
 
-            // Pattern name
             val name = "P${block.patternIndex + 1}"
             canvas.drawText(name, x + 15f, y + h / 2f + 8f, textPaint)
         }
@@ -124,7 +115,6 @@ class PlaylistView @JvmOverloads constructor(
                 val patternSlot = (localY / trackHeight).toInt()
 
                 if (bar in 0 until PlaylistData.MAX_BARS && patternSlot in 0..7) {
-                    // Cari block di posisi ini
                     val existingBlock = PlaylistData.getAll().firstOrNull {
                         bar >= it.barStart && bar < it.barStart + it.barLength &&
                         patternSlot == it.patternIndex
