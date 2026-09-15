@@ -24,12 +24,15 @@ jobs:
         with:
           packages: platform-tools
 
-      - name: Build APK
-        run: |
-          cd android
-          chmod +x gradlew 2>/dev/null || true
-          gradle wrapper --gradle-version 8.2 2>/dev/null || true
-          ./gradlew assembleDebug
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Grant execute permission
+        run: chmod +x android/gradlew || true
+
+      - name: Build Debug APK
+        working-directory: android
+        run: gradle assembleDebug --no-daemon --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
