@@ -1,16 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="#0F172A">
 
-    <!-- Header -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:padding="16dp"
+        android:padding="12dp"
+        android:background="#1E293B"
         android:gravity="center_vertical">
 
         <TextView
@@ -19,146 +20,30 @@
             android:layout_weight="1"
             android:text="🎵 YAD Music Studio"
             android:textColor="#60A5FA"
-            android:textSize="20sp"
+            android:textSize="18sp"
             android:textStyle="bold" />
 
         <TextView
-            android:id="@+id/tvBpm"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="120 BPM"
-            android:textColor="#FBBF24"
-            android:textSize="16sp"
-            android:fontFamily="monospace" />
+            android:text="v2.0"
+            android:textColor="#94A3B8"
+            android:textSize="12sp" />
     </LinearLayout>
 
-    <!-- Sequencer -->
-    <TextView
+    <com.google.android.material.tabs.TabLayout
+        android:id="@+id/tabLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:paddingBottom="8dp"
-        android:text="STEP SEQUENCER"
-        android:textColor="#94A3B8"
-        android:textSize="12sp" />
+        android:background="#1E293B"
+        app:tabTextColor="#94A3B8"
+        app:tabSelectedTextColor="#60A5FA"
+        app:tabIndicatorColor="#60A5FA" />
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/sequencerView"
+    <androidx.viewpager2.widget.ViewPager2
+        android:id="@+id/viewPager"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="3"
-        android:paddingStart="8dp"
-        android:paddingEnd="8dp" />
-
-    <!-- BPM Control -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="16dp"
-        android:gravity="center_vertical">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="BPM"
-            android:textColor="#94A3B8"
-            android:textSize="12sp"
-            android:layout_marginEnd="12dp" />
-
-        <SeekBar
-            android:id="@+id/seekBpm"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1" />
-    </LinearLayout>
-
-    <!-- Mixer -->
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:paddingBottom="8dp"
-        android:text="MIXER"
-        android:textColor="#94A3B8"
-        android:textSize="12sp" />
-
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/mixerView"
-        android:layout_width="match_parent"
-        android:layout_height="120dp"
-        android:paddingStart="8dp"
-        android:paddingEnd="8dp" />
-
-    <!-- Status -->
-    <TextView
-        android:id="@+id/tvStatus"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:padding="12dp"
-        android:background="#1E293B"
-        android:text="Siap"
-        android:textColor="#CBD5E1"
-        android:textSize="12sp"
-        android:fontFamily="monospace" />
-
-    <!-- Controls -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="8dp">
-
-        <Button
-            android:id="@+id/btnPlay"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="▶️ PLAY"
-            android:backgroundTint="#10B981"
-            android:textColor="#FFFFFF"
-            android:layout_marginEnd="4dp" />
-
-        <Button
-            android:id="@+id/btnClear"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="🗑️ CLEAR"
-            android:backgroundTint="#EF4444"
-            android:textColor="#FFFFFF"
-            android:layout_marginEnd="4dp" />
-
-        <Button
-            android:id="@+id/btnSave"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="💾 SAVE"
-            android:backgroundTint="#3B82F6"
-            android:textColor="#FFFFFF"
-            android:layout_marginEnd="4dp" />
-
-        <Button
-            android:id="@+id/btnLoad"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="📂 LOAD"
-            android:backgroundTint="#8B5CF6"
-            android:textColor="#FFFFFF"
-            android:layout_marginEnd="4dp" />
-
-        <Button
-            android:id="@+id/btnDemo"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="🎵 DEMO"
-            android:backgroundTint="#F59E0B"
-            android:textColor="#FFFFFF" />
-    </LinearLayout>
+        android:layout_weight="1" />
 
 </LinearLayout>
