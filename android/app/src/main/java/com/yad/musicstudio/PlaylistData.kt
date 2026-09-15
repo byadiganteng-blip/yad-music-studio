@@ -4,11 +4,6 @@ import android.util.Log
 import org.json.JSONArray
 import org.json.JSONObject
 
-/**
- * PlaylistData — arrange pattern jadi lagu.
- *
- * Setiap block = 1 pattern di posisi bar tertentu.
- */
 object PlaylistData {
 
     private const val TAG = "PlaylistData"
@@ -16,23 +11,21 @@ object PlaylistData {
     const val MAX_BARS = 128
 
     data class PatternBlock(
-        val patternIndex: Int,   // 0-7 (pattern)
-        val barStart: Int,       // mulai di bar berapa
-        val barLength: Int = 1   // panjang dalam bar
+        val patternIndex: Int,
+        val barStart: Int,
+        val barLength: Int = 1
     )
 
-    // List of blocks di playlist
     private val blocks = mutableListOf<PatternBlock>()
 
-    // Total bar di song
-    var totalBars: Int = 16
+    // FIX: rename dari totalBars → defaultTotalBars (hindari clash dengan getTotalBars())
+    var defaultTotalBars: Int = 16
 
     fun addBlock(patternIndex: Int, barStart: Int, barLength: Int = 1): Boolean {
         if (blocks.size >= MAX_BLOCKS) return false
         if (patternIndex !in 0 until AudioEngine.MAX_PATTERNS) return false
         if (barStart < 0 || barStart >= MAX_BARS) return false
 
-        // Cek overlap
         val end = barStart + barLength
         val overlap = blocks.any { b ->
             val bEnd = b.barStart + b.barLength
@@ -68,7 +61,6 @@ object PlaylistData {
         }?.patternIndex ?: -1
     }
 
-    // ─── SAVE / LOAD ───
     fun toJson(): JSONArray {
         val arr = JSONArray()
         for (b in blocks) {
@@ -94,8 +86,9 @@ object PlaylistData {
         blocks.sortBy { it.barStart }
     }
 
-    fun getTotalBars(): Int {
+    // FIX: rename dari getTotalBars() → calculateTotalBars()
+    fun calculateTotalBars(): Int {
         val maxBar = blocks.maxOfOrNull { it.barStart + it.barLength } ?: 0
-        return maxOf(maxBar, 16)
+        return maxOf(maxBar, defaultTotalBars)
     }
 }
