@@ -12,6 +12,7 @@
         android:maxSdkVersion="28" />
 
     <application
+        android:name=".YadMusicApp"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="YAD Music Studio"
@@ -27,6 +28,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".LogViewerActivity"
+            android:exported="false"
+            android:label="Log Viewer" />
 
         <provider
             android:name="androidx.core.content.FileProvider"
