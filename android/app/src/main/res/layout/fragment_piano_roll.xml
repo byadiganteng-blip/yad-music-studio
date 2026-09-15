@@ -7,11 +7,20 @@
     android:padding="8dp">
 
     <TextView
+        android:id="@+id/tvPianoInfo"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="🎹 PIANO ROLL — 24 keys × 16 steps"
+        android:text="🎹 Piano Roll — 0 notes"
         android:textColor="#94A3B8"
         android:textSize="12sp"
+        android:paddingBottom="4dp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Tap = aktif/nonaktif  •  Long-press = ubah velocity"
+        android:textColor="#64748B"
+        android:textSize="10sp"
         android:paddingBottom="8dp" />
 
     <androidx.recyclerview.widget.RecyclerView
