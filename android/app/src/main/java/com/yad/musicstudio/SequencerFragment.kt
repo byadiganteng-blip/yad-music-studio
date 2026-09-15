@@ -6,32 +6,31 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.*
 import androidx.fragment.app.Fragment
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 
 class SequencerFragment : Fragment() {
 
-    private lateinit var adapter: SequencerAdapter
+    private lateinit var zoomableSequencer: ZoomableSequencerView
     private lateinit var tvBpm: TextView
     private lateinit var btnPlay: Button
+    private lateinit var btnMetronome: Button
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_sequencer, container, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        val rv = view.findViewById<RecyclerView>(R.id.rvSequencer)
         tvBpm = view.findViewById(R.id.tvBpm)
         btnPlay = view.findViewById(R.id.btnPlay)
+        btnMetronome = view.findViewById(R.id.btnMetronome)
+        zoomableSequencer = view.findViewById(R.id.zoomableSequencer)
 
-        adapter = SequencerAdapter { track, step ->
+        zoomableSequencer.setOnStepToggleListener { track, step ->
             AudioEngine.toggleStep(track, step)
             AudioEngine.previewSound(track)
+            zoomableSequencer.invalidate()
         }
-        adapter.setTracks(getTracks())
-        rv.layoutManager = LinearLayoutManager(requireContext())
-        rv.adapter = adapter
 
+        // BPM
         val seek = view.findViewById<SeekBar>(R.id.seekBpm)
         seek.max = 300 - 40
         seek.progress = AudioEngine.bpm - 40
@@ -44,6 +43,7 @@ class SequencerFragment : Fragment() {
             override fun onStopTrackingTouch(sb: SeekBar?) {}
         })
 
+        // Play
         btnPlay.setOnClickListener {
             if (AudioEngine.isPlaying) {
                 AudioEngine.stop()
@@ -54,19 +54,75 @@ class SequencerFragment : Fragment() {
             }
         }
 
-        view.findViewById<Button>(R.id.btnClear).setOnClickListener {
-            AudioEngine.clearPattern()
-            refresh()
+        // Zoom
+        view.findViewById<Button>(R.id.btnZoomIn).setOnClickListener {
+            zoomableSequencer.zoomIn()
         }
+        view.findViewById<Button>(R.id.btnZoomOut).setOnClickListener {
+            zoomableSequencer.zoomOut()
+        }
+
+        // Metronome
+        btnMetronome.setOnClickListener {
+            Metronome.toggle()
+            btnMetronome.backgroundTintList = android.content.res.ColorStateList.valueOf(
+                if (Metronome.enabled) 0xFF10B981.toInt() else 0xFF3B82F6.toInt()
+            )
+            Toast.makeText(requireContext(),
+                if (Metronome.enabled) "Metronome ON" else "Metronome OFF",
+                Toast.LENGTH_SHORT).show()
+        }
+
+        // Quantize
+        view.findViewById<Button>(R.id.btnQuantize).setOnClickListener {
+            Quantizer.showQuantizeDialog(requireContext())
+        }
+
+        // Undo/Redo
+        view.findViewById<Button>(R.id.btnUndo).setOnClickListener {
+            if (AudioEngine.undo()) {
+                zoomableSequencer.invalidate()
+                Toast.makeText(requireContext(), "↶ Undo", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(requireContext(), "Tidak ada undo", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        view.findViewById<Button>(R.id.btnRedo).setOnClickListener {
+            if (AudioEngine.redo()) {
+                zoomableSequencer.invalidate()
+                Toast.makeText(requireContext(), "↷ Redo", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(requireContext(), "Tidak ada redo", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        // Clear
+        view.findViewById<Button>(R.id.btnClear).setOnClickListener {
+            UndoRedoManager.push(UndoRedoManager.Action(
+                type = "clear_pattern",
+                data = mapOf("snapshot" to AudioEngine.snapshotCurrentPattern())
+            ))
+            AudioEngine.clearPattern()
+            zoomableSequencer.invalidate()
+        }
+
+        // Demo
         view.findViewById<Button>(R.id.btnDemo).setOnClickListener {
             AudioEngine.loadDemoPattern()
-            refresh()
+            zoomableSequencer.invalidate()
         }
+
+        // Save
         view.findViewById<Button>(R.id.btnSave).setOnClickListener {
             val name = "project_${System.currentTimeMillis()}"
             val path = AudioEngine.saveProject(name)
-            Toast.makeText(requireContext(), if (path.isNotEmpty()) "💾 Saved!" else "❌ Failed", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(),
+                if (path.isNotEmpty()) "💾 Saved" else "❌ Failed",
+                Toast.LENGTH_SHORT).show()
         }
+
+        // Load
         view.findViewById<Button>(R.id.btnLoad).setOnClickListener {
             val projects = AudioEngine.listProjects()
             if (projects.isEmpty()) {
@@ -78,29 +134,17 @@ class SequencerFragment : Fragment() {
                 .setTitle("Load Project")
                 .setItems(names) { _, which ->
                     AudioEngine.loadProject(projects[which].absolutePath)
-                    refresh()
+                    zoomableSequencer.invalidate()
                 }
                 .show()
         }
+
+        // Export
         view.findViewById<Button>(R.id.btnExport).setOnClickListener {
             val path = AudioEngine.exportWav()
-            Toast.makeText(requireContext(), if (path.isNotEmpty()) "🎵 Exported WAV!" else "❌ Failed", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(),
+                if (path.isNotEmpty()) "🎵 Exported" else "❌ Failed",
+                Toast.LENGTH_SHORT).show()
         }
-    }
-
-    private fun getTracks(): List<AudioEngine.Track> {
-        return (0 until AudioEngine.TRACKS).map { i ->
-            AudioEngine.Track(
-                index = i,
-                name = AudioEngine.trackNames[i],
-                steps = AudioEngine.getCurrentPattern()[i].copyOf(),
-                volume = AudioEngine.getVolume(i)
-            )
-        }
-    }
-
-    private fun refresh() {
-        adapter.setTracks(getTracks())
-        adapter.notifyDataSetChanged()
     }
 }
