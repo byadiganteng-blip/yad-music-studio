@@ -1,0 +1,38 @@
+name: Build Music Studio APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+
+      - name: Build APK
+        run: |
+          cd android
+          chmod +x gradlew 2>/dev/null || true
+          gradle wrapper --gradle-version 8.2 2>/dev/null || true
+          ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: music-studio-apk
+          path: android/app/build/outputs/apk/debug/*.apk
