@@ -28,41 +28,37 @@ class PianoRollFragment : Fragment() {
             onNoteToggle = { _, _ -> updateInfo() },
             onNoteLongPress = { _, _ -> updateInfo() }
         )
-        rv.layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.VERTICAL, true)
+        rv.layoutManager = LinearLayoutManager(requireContext(),
+            LinearLayoutManager.VERTICAL, true)
         rv.adapter = adapter
 
-        // Clear button
         view.findViewById<Button>(R.id.btnClearPiano).setOnClickListener {
             PianoRollData.clearPattern(AudioEngine.currentPattern)
             adapter.notifyDataSetChanged()
             updateInfo()
         }
 
-        // Chord button
         view.findViewById<Button>(R.id.btnChord)?.setOnClickListener {
             ChordTool.showChordDialog(requireContext()) { rootKey, chordType ->
                 ChordTool.insertChord(rootKey, chordType, 0)
                 adapter.notifyDataSetChanged()
                 updateInfo()
                 Toast.makeText(requireContext(),
-                    "Insert chord ${MusicTheory.NOTE_NAMES[rootKey]} ${chordType.displayName}",
+                    "Chord ${MusicTheory.NOTE_NAMES[rootKey]} ${chordType.displayName}",
                     Toast.LENGTH_SHORT).show()
             }
         }
 
-        // Progression button
         view.findViewById<Button>(R.id.btnProgression)?.setOnClickListener {
             ChordTool.showProgressionDialog(requireContext()) { prog ->
                 ChordTool.insertProgression(prog)
                 adapter.notifyDataSetChanged()
                 updateInfo()
                 Toast.makeText(requireContext(),
-                    "Insert progression: ${prog.name}",
-                    Toast.LENGTH_SHORT).show()
+                    "Progression: ${prog.name}", Toast.LENGTH_SHORT).show()
             }
         }
 
-        // Scale button
         view.findViewById<Button>(R.id.btnScale)?.setOnClickListener {
             ScaleHighlight.showScaleDialog(requireContext()) { rootKey, scaleType ->
                 ScaleHighlight.rootKey = rootKey
@@ -74,14 +70,21 @@ class PianoRollFragment : Fragment() {
             }
         }
 
-        // Arp button
         view.findViewById<Button>(R.id.btnArp)?.setOnClickListener {
             ChordTool.showChordDialog(requireContext()) { rootKey, chordType ->
-                ChordTool.arpeggiate(rootKey, chordType, 0, 1, ChordTool.ArpPattern.UP)
+                // FIX: pakai named parameter untuk pattern_type
+                ChordTool.arpeggiate(
+                    rootKey = rootKey,
+                    type = chordType,
+                    pattern = AudioEngine.currentPattern,
+                    startStep = 0,
+                    stepsPerNote = 1,
+                    pattern_type = ChordTool.ArpPattern.UP
+                )
                 adapter.notifyDataSetChanged()
                 updateInfo()
                 Toast.makeText(requireContext(),
-                    "Arpeggio UP: ${MusicTheory.NOTE_NAMES[rootKey]} ${chordType.displayName}",
+                    "Arpeggio: ${MusicTheory.NOTE_NAMES[rootKey]} ${chordType.displayName}",
                     Toast.LENGTH_SHORT).show()
             }
         }
