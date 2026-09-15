@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="110dp"
+    android:layout_width="120dp"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:padding="6dp"
@@ -18,13 +18,19 @@
         android:textStyle="bold"
         android:fontFamily="monospace" />
 
+    <com.yad.musicstudio.PeakMeterView
+        android:id="@+id/peakMeter"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:layout_marginTop="4dp" />
+
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="VOL"
         android:textColor="#94A3B8"
         android:textSize="9sp"
-        android:layout_marginTop="8dp" />
+        android:layout_marginTop="4dp" />
 
     <SeekBar
         android:id="@+id/seekVolume"
@@ -46,7 +52,7 @@
         android:text="PAN"
         android:textColor="#94A3B8"
         android:textSize="9sp"
-        android:layout_marginTop="4dp" />
+        android:layout_marginTop="2dp" />
 
     <SeekBar
         android:id="@+id/seekPan"
@@ -57,7 +63,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:layout_marginTop="4dp">
+        android:layout_marginTop="2dp">
 
         <Button
             android:id="@+id/btnMute"
@@ -78,6 +84,34 @@
             android:textSize="10sp"
             android:textColor="#FFFFFF"
             android:backgroundTint="#334155" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="4dp">
+
+        <Button
+            android:id="@+id/btnEq"
+            android:layout_width="0dp"
+            android:layout_height="32dp"
+            android:layout_weight="1"
+            android:text="EQ"
+            android:textSize="10sp"
+            android:backgroundTint="#8B5CF6"
+            android:textColor="#FFFFFF"
+            android:layout_marginEnd="2dp" />
+
+        <Button
+            android:id="@+id/btnComp"
+            android:layout_width="0dp"
+            android:layout_height="32dp"
+            android:layout_weight="1"
+            android:text="Comp"
+            android:textSize="10sp"
+            android:backgroundTint="#EC4899"
+            android:textColor="#FFFFFF" />
     </LinearLayout>
 
     <TextView
