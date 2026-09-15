@@ -36,7 +36,8 @@ class SequencerFragment : Fragment() {
         seek.progress = AudioEngine.bpm - 40
         seek.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(sb: SeekBar?, p: Int, u: Boolean) {
-                AudioEngine.setBpm(40 + p)
+                // FIX: pakai updateBpm()
+                AudioEngine.updateBpm(40 + p)
                 tvBpm.text = "${AudioEngine.bpm} BPM"
             }
             override fun onStartTrackingTouch(sb: SeekBar?) {}
