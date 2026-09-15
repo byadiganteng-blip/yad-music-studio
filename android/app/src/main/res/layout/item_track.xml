@@ -3,12 +3,12 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
-    android:padding="4dp"
+    android:padding="3dp"
     android:gravity="center_vertical">
 
     <TextView
         android:id="@+id/tvTrackName"
-        android:layout_width="70dp"
+        android:layout_width="72dp"
         android:layout_height="wrap_content"
         android:text="Kick"
         android:textColor="#CBD5E1"
