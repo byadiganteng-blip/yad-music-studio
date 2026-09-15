@@ -1,6 +1,5 @@
 package com.yad.musicstudio
 
-import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -15,15 +14,16 @@ class MixerAdapter(
     private val onEffectToggle: (Int, AudioEngine.EffectType, Boolean) -> Unit
 ) : RecyclerView.Adapter<MixerAdapter.VH>() {
 
-    private var tracks: List<AudioEngine.Track> = emptyList()
+    private var tracks: List<Track> = emptyList()
 
-    fun setTracks(t: List<AudioEngine.Track>) {
+    fun setTracks(t: List<Track>) {
         tracks = t
         notifyDataSetChanged()
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
-        val v = LayoutInflater.from(parent.context).inflate(R.layout.item_mixer_channel, parent, false)
+        val v = LayoutInflater.from(parent.context)
+            .inflate(R.layout.item_mixer_channel, parent, false)
         return VH(v)
     }
 
@@ -44,7 +44,7 @@ class MixerAdapter(
         private val cbDelay: CheckBox = itemView.findViewById(R.id.cbDelay)
         private val cbDist: CheckBox = itemView.findViewById(R.id.cbDistortion)
 
-        fun bind(track: AudioEngine.Track) {
+        fun bind(track: Track) {
             val i = track.index
             tvName.text = track.name
             seekVol.max = 100
@@ -76,19 +76,31 @@ class MixerAdapter(
                 onMuteToggle(i, newMute)
                 btnMute.text = if (newMute) "🔇" else "🔊"
             }
-            btnMute.setBackgroundColor(if (AudioEngine.isMuted(i)) 0xFFEF4444.toInt() else 0xFF3B82F6.toInt())
+            btnMute.setBackgroundColor(
+                if (AudioEngine.isMuted(i)) 0xFFEF4444.toInt() else 0xFF3B82F6.toInt()
+            )
 
             btnSolo.text = "S"
-            btnSolo.setBackgroundColor(if (AudioEngine.isSolo(i)) 0xFFFBBF24.toInt() else 0xFF334155.toInt())
+            btnSolo.setBackgroundColor(
+                if (AudioEngine.isSolo(i)) 0xFFFBBF24.toInt() else 0xFF334155.toInt()
+            )
             btnSolo.setOnClickListener {
                 val newSolo = !AudioEngine.isSolo(i)
                 onSoloToggle(i, newSolo)
-                btnSolo.setBackgroundColor(if (newSolo) 0xFFFBBF24.toInt() else 0xFF334155.toInt())
+                btnSolo.setBackgroundColor(
+                    if (newSolo) 0xFFFBBF24.toInt() else 0xFF334155.toInt()
+                )
             }
 
-            cbReverb.setOnCheckedChangeListener { _, checked -> onEffectToggle(i, AudioEngine.EffectType.REVERB, checked) }
-            cbDelay.setOnCheckedChangeListener { _, checked -> onEffectToggle(i, AudioEngine.EffectType.DELAY, checked) }
-            cbDist.setOnCheckedChangeListener { _, checked -> onEffectToggle(i, AudioEngine.EffectType.DISTORTION, checked) }
+            cbReverb.setOnCheckedChangeListener { _, checked ->
+                onEffectToggle(i, AudioEngine.EffectType.REVERB, checked)
+            }
+            cbDelay.setOnCheckedChangeListener { _, checked ->
+                onEffectToggle(i, AudioEngine.EffectType.DELAY, checked)
+            }
+            cbDist.setOnCheckedChangeListener { _, checked ->
+                onEffectToggle(i, AudioEngine.EffectType.DISTORTION, checked)
+            }
         }
     }
 }
